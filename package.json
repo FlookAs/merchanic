@@ -1,0 +1,5 @@
+{
+  "name": "merchanic",
+  "private": true,
+  "workspaces": ["apps/*"]
+}
