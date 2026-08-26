@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsNumber,
@@ -28,9 +29,10 @@ export class CreateProductDto {
   @IsNotEmpty()
   unit: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  imageKey?: string;
+  imageKeys?: string[];
 
   @IsBoolean()
   @IsOptional()

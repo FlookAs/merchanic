@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsNumber,
   IsOptional,
@@ -29,9 +30,10 @@ export class UpdateProductDto {
   @IsOptional()
   unit?: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  imageKey?: string;
+  imageKeys?: string[];
 
   @IsBoolean()
   @IsOptional()

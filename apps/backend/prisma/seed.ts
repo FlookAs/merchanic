@@ -11,25 +11,25 @@ async function main() {
   const catWater = await prisma.category.upsert({
     where: { slug: 'water-treatment' },
     update: {},
-    create: { name: 'ระบบบำบัดน้ำ', slug: 'water-treatment' },
+    create: { name: 'ระบบบำบัดน้ำ', slug: 'water-treatment', description: 'ออกแบบ ติดตั้ง และซ่อมบำรุงระบบบำบัดน้ำอุตสาหกรรมครบวงจร', icon: 'Droplets' },
   });
   const catLeak = await prisma.category.upsert({
     where: { slug: 'leak-repair' },
     update: {},
-    create: { name: 'ซ่อมรอยรั่ว', slug: 'leak-repair' },
+    create: { name: 'ซ่อมรอยรั่ว', slug: 'leak-repair', description: 'ตรวจสอบและซ่อมแซมรอยรั่วในระบบท่อและอุปกรณ์อุตสาหกรรม', icon: 'Shield' },
   });
   const catWeld = await prisma.category.upsert({
     where: { slug: 'welding' },
     update: {},
-    create: { name: 'งานเชื่อมและซ่อมเครื่องจักร', slug: 'welding' },
+    create: { name: 'งานเชื่อมและซ่อมเครื่องจักร', slug: 'welding', description: 'รับงานเชื่อมโลหะและซ่อมบำรุงเครื่องจักรอุตสาหกรรมทุกประเภท', icon: 'Wrench' },
   });
 
-  // Products
+  // Products — ใช้ UUID คงที่เพื่อให้ upsert ทำงานได้
   const p1 = await prisma.product.upsert({
-    where: { id: 'seed-product-001' },
+    where: { id: '11111111-1111-1111-1111-111111111001' },
     update: {},
     create: {
-      id: 'seed-product-001',
+      id: '11111111-1111-1111-1111-111111111001',
       categoryId: catWater.id,
       name: 'ระบบกรองน้ำอุตสาหกรรม (RO)',
       description: 'ระบบกรองน้ำแบบ Reverse Osmosis สำหรับโรงงานอุตสาหกรรม',
@@ -39,10 +39,10 @@ async function main() {
     },
   });
   const p2 = await prisma.product.upsert({
-    where: { id: 'seed-product-002' },
+    where: { id: '11111111-1111-1111-1111-111111111002' },
     update: {},
     create: {
-      id: 'seed-product-002',
+      id: '11111111-1111-1111-1111-111111111002',
       categoryId: catWater.id,
       name: 'บำรุงรักษาระบบบำบัดน้ำรายปี',
       description: 'บริการตรวจสอบและบำรุงรักษาระบบบำบัดน้ำประจำปี',
@@ -52,10 +52,10 @@ async function main() {
     },
   });
   const p3 = await prisma.product.upsert({
-    where: { id: 'seed-product-003' },
+    where: { id: '11111111-1111-1111-1111-111111111003' },
     update: {},
     create: {
-      id: 'seed-product-003',
+      id: '11111111-1111-1111-1111-111111111003',
       categoryId: catLeak.id,
       name: 'ซ่อมรอยรั่วท่อแรงดันสูง',
       description: 'บริการซ่อมรอยรั่วท่อแรงดันสูงโดยไม่ต้องหยุดการผลิต',
@@ -65,10 +65,10 @@ async function main() {
     },
   });
   const p4 = await prisma.product.upsert({
-    where: { id: 'seed-product-004' },
+    where: { id: '11111111-1111-1111-1111-111111111004' },
     update: {},
     create: {
-      id: 'seed-product-004',
+      id: '11111111-1111-1111-1111-111111111004',
       categoryId: catWeld.id,
       name: 'งานเชื่อมซ่อมเครื่องจักร',
       description: 'บริการเชื่อมซ่อมชิ้นส่วนเครื่องจักรด้วยช่างเชื่อมมืออาชีพ',
@@ -80,24 +80,22 @@ async function main() {
 
   // Portfolios
   await prisma.portfolio.upsert({
-    where: { id: 'seed-portfolio-001' },
+    where: { id: '22222222-2222-2222-2222-222222222001' },
     update: {},
     create: {
-      id: 'seed-portfolio-001',
+      id: '22222222-2222-2222-2222-222222222001',
       title: 'ติดตั้งระบบบำบัดน้ำโรงงานอาหาร จ.สมุทรปราการ',
-      description:
-        'ติดตั้งระบบ RO ขนาด 50 ลูกบาศก์เมตร/วัน สำหรับโรงงานผลิตอาหารแช่แข็ง',
+      description: 'ติดตั้งระบบ RO ขนาด 50 ลูกบาศก์เมตร/วัน สำหรับโรงงานผลิตอาหารแช่แข็ง',
       relatedServiceId: catWater.id,
     },
   });
   await prisma.portfolio.upsert({
-    where: { id: 'seed-portfolio-002' },
+    where: { id: '22222222-2222-2222-2222-222222222002' },
     update: {},
     create: {
-      id: 'seed-portfolio-002',
+      id: '22222222-2222-2222-2222-222222222002',
       title: 'ซ่อมรอยรั่วหม้อต้มไอน้ำ โรงงานยาง จ.ระยอง',
-      description:
-        'แก้ปัญหารอยรั่วหม้อต้มความดัน 15 บาร์ โดยไม่หยุดสายการผลิต',
+      description: 'แก้ปัญหารอยรั่วหม้อต้มความดัน 15 บาร์ โดยไม่หยุดสายการผลิต',
       relatedServiceId: catLeak.id,
     },
   });
@@ -131,10 +129,10 @@ async function main() {
   const finalTotal = autoTotal + taxAmount;
 
   const quote = await prisma.quoteRequest.upsert({
-    where: { id: 'seed-quote-001' },
+    where: { id: '33333333-3333-3333-3333-333333333001' },
     update: {},
     create: {
-      id: 'seed-quote-001',
+      id: '33333333-3333-3333-3333-333333333001',
       customerName: 'สมชาย มั่นคง',
       company: 'บริษัท อุตสาหกรรมไทย จำกัด',
       email: 'somchai@thai-industry.co.th',
@@ -150,10 +148,10 @@ async function main() {
   });
 
   await prisma.quoteRequestItem.upsert({
-    where: { id: 'seed-qitem-001' },
+    where: { id: '44444444-4444-4444-4444-444444444001' },
     update: {},
     create: {
-      id: 'seed-qitem-001',
+      id: '44444444-4444-4444-4444-444444444001',
       quoteRequestId: quote.id,
       productId: p1.id,
       quantity: 1,
@@ -161,10 +159,10 @@ async function main() {
     },
   });
   await prisma.quoteRequestItem.upsert({
-    where: { id: 'seed-qitem-002' },
+    where: { id: '44444444-4444-4444-4444-444444444002' },
     update: {},
     create: {
-      id: 'seed-qitem-002',
+      id: '44444444-4444-4444-4444-444444444002',
       quoteRequestId: quote.id,
       productId: p3.id,
       quantity: 2,

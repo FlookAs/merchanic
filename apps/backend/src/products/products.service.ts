@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploads: UploadsService,
+  ) {}
 
   findAll(adminView = false) {
     return this.prisma.product.findMany({
@@ -29,12 +33,19 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
+    if (dto.imageKeys) {
+      const removed = existing.imageKeys.filter((k) => !dto.imageKeys!.includes(k));
+      await Promise.allSettled(removed.map((k) => this.uploads.deleteFile(k)));
+    }
     return this.prisma.product.update({ where: { id }, data: dto });
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const product = await this.findOne(id);
+    await Promise.allSettled(
+      product.imageKeys.map((key) => this.uploads.deleteFile(key)),
+    );
     return this.prisma.product.delete({ where: { id } });
   }
 }

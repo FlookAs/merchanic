@@ -2,4 +2,11 @@ node_modules/
 dist/
 .env
 apps/backend/.env
+apps/frontend/.env
 pgdata/
+
+# local uploads (ใช้ R2 ใน production)
+apps/backend/uploads/
+
+# Claude Code local settings
+.claude/settings.local.json

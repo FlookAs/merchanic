@@ -4,14 +4,19 @@ import {
 } from '@nestjs/common';
 import puppeteer from 'puppeteer';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 import { AdjustItemPriceDto } from './dto/adjust-item-price.dto.js';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto.js';
 import { UpdateQuoteStatusDto } from './dto/update-quote-status.dto.js';
 import { renderQuoteHtml } from './templates/quote.template.js';
+import { renderConfirmationHtml } from './templates/confirmation.template.js';
 
 @Injectable()
 export class QuotesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploads: UploadsService,
+  ) {}
 
   async createQuote(dto: CreateQuoteRequestDto) {
     const productIds = dto.items.map((i) => i.productId);
@@ -43,8 +48,8 @@ export class QuotesService {
     const taxAmount = autoTotal * (taxRate / 100);
     const finalTotal = autoTotal + taxAmount;
 
-    return this.prisma.$transaction(async (tx) => {
-      const quote = await tx.quoteRequest.create({
+    const quote = await this.prisma.$transaction(async (tx) => {
+      return tx.quoteRequest.create({
         data: {
           customerName: dto.customerName,
           company: dto.company,
@@ -57,10 +62,14 @@ export class QuotesService {
           finalTotal,
           items: { create: itemsData },
         },
-        include: { items: true },
+        include: { items: { include: { product: true } } },
       });
-      return quote;
     });
+
+    // Generate confirmation PDF in background — ไม่ await เพื่อไม่ให้ user รอนาน
+    this.generateConfirmationPdf(quote).catch(() => {});
+
+    return quote;
   }
 
   findAll() {
@@ -122,8 +131,85 @@ export class QuotesService {
     });
   }
 
+  private async generateConfirmationPdf(quote: {
+    id: string;
+    createdAt: Date;
+    customerName: string;
+    company: string | null;
+    email: string;
+    phone: string;
+    message: string | null;
+    autoTotal: unknown;
+    taxRate: unknown;
+    items: { productId: string; unitPriceSnapshot: unknown; quantity: number; product?: { name: string; unit: string } | null }[];
+  }) {
+    const subtotal = Number(quote.autoTotal);
+    const taxRate = Number(quote.taxRate);
+    const taxAmount = subtotal * (taxRate / 100);
+    const estimatedTotal = subtotal + taxAmount;
+
+    const html = renderConfirmationHtml({
+      refNumber: quote.id.slice(0, 8).toUpperCase(),
+      submittedAt: quote.createdAt,
+      customerName: quote.customerName,
+      company: quote.company,
+      email: quote.email,
+      phone: quote.phone,
+      message: quote.message,
+      items: quote.items.map((item) => {
+        const unitPrice = Number(item.unitPriceSnapshot);
+        return {
+          name: item.product?.name ?? item.productId,
+          unit: item.product?.unit ?? '',
+          quantity: item.quantity,
+          unitPrice,
+          total: unitPrice * item.quantity,
+        };
+      }),
+      subtotal,
+      taxRate,
+      taxAmount,
+      estimatedTotal,
+    });
+
+    const browser = await puppeteer.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'load' });
+      const pdfBuffer = Buffer.from(
+        await page.pdf({ format: 'A4', printBackground: true }),
+      );
+      await this.uploads.uploadBuffer(
+        `confirmations/${quote.id}.pdf`,
+        pdfBuffer,
+        'application/pdf',
+      );
+    } finally {
+      await browser.close();
+    }
+  }
+
+  async removeDocument(quoteId: string, documentId: string) {
+    const doc = await this.prisma.quoteDocument.findFirst({
+      where: { id: documentId, quoteRequestId: quoteId },
+    });
+    if (!doc) throw new NotFoundException(`QuoteDocument ${documentId} not found`);
+    if (doc.pdfKey) {
+      await this.uploads.deleteFile(doc.pdfKey).catch(() => {});
+    }
+    return this.prisma.quoteDocument.delete({ where: { id: documentId } });
+  }
+
   async remove(id: string) {
-    await this.findOne(id);
+    const quote = await this.findOne(id);
+    await Promise.allSettled(
+      quote.quoteDocuments
+        .filter((doc) => doc.pdfKey)
+        .map((doc) => this.uploads.deleteFile(doc.pdfKey!)),
+    );
     await this.prisma.$transaction([
       this.prisma.quoteDocument.deleteMany({ where: { quoteRequestId: id } }),
       this.prisma.quoteRequestItem.deleteMany({ where: { quoteRequestId: id } }),
@@ -174,18 +260,20 @@ export class QuotesService {
     });
 
     const browser = await puppeteer.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
+    let pdfBuffer: Buffer;
     try {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'load' });
-      await page.pdf({ format: 'A4', printBackground: true });
+      pdfBuffer = Buffer.from(await page.pdf({ format: 'A4', printBackground: true }));
     } finally {
       await browser.close();
     }
 
-    // pdfKey placeholder — R2 upload ทำใน Phase 6
     const pdfKey = `quotes/${quoteId}/${documentNumber}.pdf`;
+    await this.uploads.uploadBuffer(pdfKey, pdfBuffer, 'application/pdf');
 
     const doc = await this.prisma.$transaction(async (tx) => {
       const document = await tx.quoteDocument.create({

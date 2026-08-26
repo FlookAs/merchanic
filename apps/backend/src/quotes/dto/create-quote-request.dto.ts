@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   ValidateNested,
 } from 'class-validator';
 import { CreateQuoteItemDto } from './create-quote-item.dto.js';
@@ -12,18 +13,19 @@ import { CreateQuoteItemDto } from './create-quote-item.dto.js';
 export class CreateQuoteRequestDto {
   @IsString()
   @IsNotEmpty()
-  customerName: string;
+  customerName!: string;
 
   @IsString()
   @IsOptional()
   company?: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  phone: string;
+  @Matches(/^0\d{8,9}$/, { message: 'เบอร์โทรไม่ถูกต้อง (ตัวอย่าง: 0812345678)' })
+  phone!: string;
 
   @IsString()
   @IsOptional()
@@ -32,5 +34,5 @@ export class CreateQuoteRequestDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateQuoteItemDto)
-  items: CreateQuoteItemDto[];
+  items!: CreateQuoteItemDto[];
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreatePortfolioDto {
   @IsString()
@@ -9,9 +9,10 @@ export class CreatePortfolioDto {
   @IsNotEmpty()
   description: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  imageKey?: string;
+  imageKeys?: string[];
 
   @IsUUID()
   @IsOptional()

@@ -70,4 +70,14 @@ export class QuotesController {
   generateDocument(@Param('id') id: string) {
     return this.quotes.generateDocument(id);
   }
+
+  @Delete(':id/document/:documentId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  removeDocument(
+    @Param('id') id: string,
+    @Param('documentId') documentId: string,
+  ) {
+    return this.quotes.removeDocument(id, documentId);
+  }
 }

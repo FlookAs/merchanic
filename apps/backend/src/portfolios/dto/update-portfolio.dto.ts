@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class UpdatePortfolioDto {
   @IsString()
@@ -9,9 +9,10 @@ export class UpdatePortfolioDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  imageKey?: string;
+  imageKeys?: string[];
 
   @IsUUID()
   @IsOptional()
